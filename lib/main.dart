@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
+
+import 'screens/main_navigation_screen.dart';
 
 void main() {
   runApp(const HomeMinderApp());
@@ -20,7 +21,7 @@ class HomeMinderApp extends StatelessWidget {
           seedColor: const Color(0xFF2E7D32),
         ),
       ),
-      home: const HomeScreen(),
+      home: const MainNavigationScreen(),
     );
   }
 }
