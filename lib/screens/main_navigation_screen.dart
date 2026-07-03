@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'calendar_screen.dart';
 import 'home_screen.dart';
 import 'properties_screen.dart';
+import 'search_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -18,9 +20,9 @@ class _MainNavigationScreenState
   final List<Widget> pages = const [
     HomeScreen(),
     PropertiesScreen(),
-    Placeholder(),
-    Placeholder(),
-    Placeholder(),
+    CalendarPlaceholderScreen(),
+    SearchScreen(),
+    SettingsPlaceholderScreen(),
   ];
 
   @override
@@ -56,6 +58,40 @@ class _MainNavigationScreenState
             label: 'Settings',
           ),
         ],
+      ),
+    );
+  }
+}
+
+class CalendarPlaceholderScreen extends StatelessWidget {
+  const CalendarPlaceholderScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          '📅 Calendar\n\nComing Soon',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 24),
+        ),
+      ),
+    );
+  }
+}
+
+class SettingsPlaceholderScreen extends StatelessWidget {
+  const SettingsPlaceholderScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          '⚙️ Settings\n\nComing Soon',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 24),
+        ),
       ),
     );
   }
