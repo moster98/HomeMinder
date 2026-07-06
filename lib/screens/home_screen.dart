@@ -1,128 +1,211 @@
 import 'package:flutter/material.dart';
+
+import '../services/dashboard_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/action_tile.dart';
+import '../widgets/stat_card.dart';
 import 'properties_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int propertyCount = 1;
+  int health = 100;
+  int openJobs = 0;
+  double totalSpent = 0;
+  int reminders = 0;
+  int photos = 0;
+  int documents = 0;
+
+  final String mainPropertyId = '1';
+
+  @override
+  void initState() {
+    super.initState();
+    loadDashboard();
+  }
+
+  Future<void> loadDashboard() async {
+    final loadedHealth = await DashboardService.propertyHealth(mainPropertyId);
+    final loadedOpenJobs = await DashboardService.openJobs(mainPropertyId);
+    final loadedSpent = await DashboardService.totalSpent(mainPropertyId);
+    final loadedReminders = await DashboardService.reminderCount(mainPropertyId);
+    final loadedPhotos = await DashboardService.photoCount(mainPropertyId);
+    final loadedDocuments = await DashboardService.documentCount(mainPropertyId);
+
+    setState(() {
+      health = loadedHealth;
+      openJobs = loadedOpenJobs;
+      totalSpent = loadedSpent;
+      reminders = loadedReminders;
+      photos = loadedPhotos;
+      documents = loadedDocuments;
+    });
+  }
 
   void openProperties(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const PropertiesScreen()),
-    );
+    ).then((_) => loadDashboard());
   }
 
   @override
   Widget build(BuildContext context) {
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Good Morning'
+        : hour < 18
+            ? 'Good Afternoon'
+            : 'Good Evening';
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7F3),
-      appBar: AppBar(
-        title: const Text('🏡 HomeMinder'),
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)],
+      body: RefreshIndicator(
+        onRefresh: loadDashboard,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const SizedBox(height: 10),
+            Text(
+              '$greeting, James 👋',
+              style: const TextStyle(
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
               ),
-              borderRadius: BorderRadius.circular(28),
             ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 6),
+            const Text(
+              'Here’s your live HomeMinder overview.',
+              style: TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+            const SizedBox(height: 24),
+
+            Row(
               children: [
-                Icon(Icons.home_rounded, size: 70, color: Colors.white),
-                SizedBox(height: 16),
-                Text(
-                  'Welcome to HomeMinder',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: StatCard(
+                    icon: Icons.house,
+                    title: propertyCount.toString(),
+                    subtitle: propertyCount == 1 ? 'Property' : 'Properties',
                   ),
                 ),
-                SizedBox(height: 8),
-                Text(
-                  'Your home, organised and protected.',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatCard(
+                    icon: Icons.health_and_safety,
+                    title: '$health%',
+                    subtitle: 'Health',
+                  ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 12),
 
-          const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: StatCard(
+                    icon: Icons.handyman,
+                    title: openJobs.toString(),
+                    subtitle: 'Open Jobs',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatCard(
+                    icon: Icons.payments,
+                    title: '£${totalSpent.toStringAsFixed(0)}',
+                    subtitle: 'Spent',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
 
-          const Text(
-            'Quick Access',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
+            Row(
+              children: [
+                Expanded(
+                  child: StatCard(
+                    icon: Icons.notifications,
+                    title: reminders.toString(),
+                    subtitle: 'Reminders',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatCard(
+                    icon: Icons.photo_library,
+                    title: photos.toString(),
+                    subtitle: 'Photos',
+                  ),
+                ),
+              ],
+            ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 28),
+            const Text(
+              'Quick Actions',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
 
-          HomeButton(
-            icon: Icons.house_rounded,
-            label: 'My Properties',
-            subtitle: 'Manage homes, reminders, jobs and documents',
-            onTap: () => openProperties(context),
-          ),
+            ActionTile(
+              icon: Icons.house_rounded,
+              title: 'My Properties',
+              subtitle: 'Open your homes, dashboards and tools',
+              onTap: () => openProperties(context),
+            ),
+            ActionTile(
+              icon: Icons.calendar_month,
+              title: 'Calendar',
+              subtitle: 'See upcoming property reminders',
+              onTap: () {},
+            ),
+            ActionTile(
+              icon: Icons.timeline,
+              title: 'Recent Activity',
+              subtitle: 'Track jobs, costs, documents and photos',
+              onTap: () {},
+            ),
+            ActionTile(
+              icon: Icons.settings,
+              title: 'Settings',
+              subtitle: 'Notifications, backups and preferences',
+              onTap: () {},
+            ),
 
-          HomeButton(
-            icon: Icons.calendar_month,
-            label: 'Calendar',
-            subtitle: 'View upcoming property reminders',
-            onTap: () {},
-          ),
-
-          HomeButton(
-            icon: Icons.health_and_safety,
-            label: 'Home Health',
-            subtitle: 'See what needs attention',
-            onTap: () {},
-          ),
-
-          HomeButton(
-            icon: Icons.settings,
-            label: 'Settings',
-            subtitle: 'App preferences and account options',
-            onTap: () {},
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class HomeButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const HomeButton({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        leading: CircleAvatar(
-          backgroundColor: const Color(0xFFE8F5E9),
-          child: Icon(icon, color: const Color(0xFF2E7D32)),
+            const SizedBox(height: 26),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(22),
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 28,
+                      backgroundColor: AppTheme.lightGreen,
+                      child: Icon(
+                        Icons.auto_awesome,
+                        color: AppTheme.primaryGreen,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'You have $documents documents saved and $photos photos stored for your home.',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
     );
   }
