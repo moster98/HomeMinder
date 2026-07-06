@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../models/property.dart';
+import '../models/timeline_item.dart';
 import '../services/dashboard_service.dart';
+import '../services/timeline_service.dart';
 import 'calendar_screen.dart';
 import 'costs_screen.dart';
 import 'documents_screen.dart';
 import 'jobs_screen.dart';
 import 'photos_screen.dart';
 import 'reminders_screen.dart';
+import 'timeline_screen.dart';
 
 class PropertyScreen extends StatefulWidget {
   final Property property;
@@ -27,6 +30,7 @@ class _PropertyScreenState extends State<PropertyScreen> {
   int photos = 0;
   int documents = 0;
   double spent = 0;
+  List<TimelineItem> recentActivity = [];
 
   @override
   void initState() {
@@ -42,6 +46,7 @@ class _PropertyScreenState extends State<PropertyScreen> {
     final documentCount =
         await DashboardService.documentCount(widget.property.id);
     final totalSpent = await DashboardService.totalSpent(widget.property.id);
+    final recent = await TimelineService.recent(widget.property.id);
 
     setState(() {
       reminders = reminderCount;
@@ -49,6 +54,7 @@ class _PropertyScreenState extends State<PropertyScreen> {
       photos = photoCount;
       documents = documentCount;
       spent = totalSpent;
+      recentActivity = recent;
     });
   }
 
@@ -70,9 +76,7 @@ class _PropertyScreenState extends State<PropertyScreen> {
     if (photos == 0) score -= 5;
 
     return score.clamp(50, 100);
-  }
-
-  @override
+  }@override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7F3),
@@ -95,6 +99,9 @@ class _PropertyScreenState extends State<PropertyScreen> {
             _sectionTitle('Quick Actions'),
             _quickActions(),
             const SizedBox(height: 22),
+            _sectionTitle('Recent Activity'),
+            _recentActivityCard(),
+            const SizedBox(height: 22),
             _sectionTitle('Property Tools'),
             _toolTile(
               icon: Icons.notifications_active,
@@ -107,6 +114,12 @@ class _PropertyScreenState extends State<PropertyScreen> {
               title: 'Calendar',
               subtitle: 'See upcoming reminders by date',
               onTap: () => openPage(CalendarScreen(property: widget.property)),
+            ),
+            _toolTile(
+              icon: Icons.timeline,
+              title: 'Timeline',
+              subtitle: 'See property activity history',
+              onTap: () => openPage(TimelineScreen(property: widget.property)),
             ),
             _toolTile(
               icon: Icons.handyman,
@@ -242,9 +255,7 @@ class _PropertyScreenState extends State<PropertyScreen> {
         ),
       ),
     );
-  }
-
-  Widget _statsGrid() {
+  }Widget _statsGrid() {
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -258,7 +269,7 @@ class _PropertyScreenState extends State<PropertyScreen> {
         _statCard(Icons.photo_library, photos.toString(), 'Photos'),
         _statCard(Icons.description, documents.toString(), 'Documents'),
         _statCard(Icons.payments, '£${spent.toStringAsFixed(0)}', 'Spent'),
-        _statCard(Icons.calendar_month, 'View', 'Calendar'),
+        _statCard(Icons.timeline, 'View', 'Timeline'),
       ],
     );
   }
@@ -274,10 +285,7 @@ class _PropertyScreenState extends State<PropertyScreen> {
             const SizedBox(height: 8),
             Text(
               number,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             Text(label),
           ],
@@ -330,14 +338,62 @@ class _PropertyScreenState extends State<PropertyScreen> {
           children: [
             Icon(icon, color: const Color(0xFF2E7D32)),
             const SizedBox(height: 6),
-            Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),
     );
+  }
+
+  Widget _recentActivityCard() {
+    if (recentActivity.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(
+            child: Text('No recent activity yet.', style: TextStyle(fontSize: 16)),
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Column(
+        children: recentActivity.map((item) {
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: const Color(0xFFE8F5E9),
+              child: Icon(
+                _iconForType(item.type),
+                color: const Color(0xFF2E7D32),
+              ),
+            ),
+            title: Text(
+              item.title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(item.subtitle),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  IconData _iconForType(String type) {
+    switch (type) {
+      case 'Job':
+        return Icons.handyman;
+      case 'Cost':
+        return Icons.payments;
+      case 'Reminder':
+        return Icons.notifications_active;
+      case 'Photo':
+        return Icons.photo_library;
+      case 'Document':
+        return Icons.description;
+      default:
+        return Icons.history;
+    }
   }
 
   Widget _sectionTitle(String title) {
@@ -345,10 +401,7 @@ class _PropertyScreenState extends State<PropertyScreen> {
       padding: const EdgeInsets.only(left: 4, bottom: 10),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 21,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -367,10 +420,7 @@ class _PropertyScreenState extends State<PropertyScreen> {
           backgroundColor: const Color(0xFFE8F5E9),
           child: Icon(icon, color: const Color(0xFF2E7D32)),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,

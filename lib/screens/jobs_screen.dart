@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/job.dart';
 import '../models/property.dart';
 import '../services/storage_service.dart';
+import '../services/timeline_service.dart';
 
 class JobsScreen extends StatefulWidget {
   final Property property;
@@ -35,9 +36,7 @@ class _JobsScreenState extends State<JobsScreen> {
     setState(() {
       jobs
         ..clear()
-        ..addAll(
-          (data as List).map((e) => Job.fromJson(e)).toList(),
-        );
+        ..addAll((data as List).map((e) => Job.fromJson(e)).toList());
     });
   }
 
@@ -62,17 +61,13 @@ class _JobsScreenState extends State<JobsScreen> {
               children: [
                 TextField(
                   controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Job title',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Job title'),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: notesController,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Notes'),
                 ),
               ],
             ),
@@ -86,19 +81,26 @@ class _JobsScreenState extends State<JobsScreen> {
               onPressed: () async {
                 if (titleController.text.trim().isEmpty) return;
 
+                final newJob = Job(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  propertyId: widget.property.id,
+                  title: titleController.text.trim(),
+                  notes: notesController.text.trim(),
+                  createdAt: DateTime.now(),
+                );
+
                 setState(() {
-                  jobs.add(
-                    Job(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      propertyId: widget.property.id,
-                      title: titleController.text.trim(),
-                      notes: notesController.text.trim(),
-                      createdAt: DateTime.now(),
-                    ),
-                  );
+                  jobs.add(newJob);
                 });
 
                 await saveJobs();
+
+                await TimelineService.add(
+                  propertyId: widget.property.id,
+                  type: 'Job',
+                  title: newJob.title,
+                  subtitle: 'Job created',
+                );
 
                 if (context.mounted) {
                   Navigator.pop(context);
@@ -164,11 +166,22 @@ class _JobsScreenState extends State<JobsScreen> {
                       '${job.notes.isEmpty ? "No notes" : job.notes}\nCreated: ${formatDate(job.createdAt)}',
                     ),
                     onChanged: (value) async {
+                      final wasCompleted = job.completed;
+
                       setState(() {
                         job.completed = value ?? false;
                       });
 
                       await saveJobs();
+
+                      if (!wasCompleted && job.completed) {
+                        await TimelineService.add(
+                          propertyId: widget.property.id,
+                          type: 'Job',
+                          title: job.title,
+                          subtitle: 'Job completed',
+                        );
+                      }
                     },
                   ),
                 );

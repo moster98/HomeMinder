@@ -1,3 +1,4 @@
+import 'theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 import 'screens/main_navigation_screen.dart';
@@ -14,13 +15,7 @@ class HomeMinderApp extends StatelessWidget {
     return MaterialApp(
       title: 'HomeMinder',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF7F9F6),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32),
-        ),
-      ),
+      theme: AppTheme.lightTheme,
       home: const MainNavigationScreen(),
     );
   }

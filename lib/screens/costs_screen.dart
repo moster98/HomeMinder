@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/cost.dart';
 import '../models/property.dart';
 import '../services/storage_service.dart';
+import '../services/timeline_service.dart';
 
 class CostsScreen extends StatefulWidget {
   final Property property;
@@ -35,9 +36,7 @@ class _CostsScreenState extends State<CostsScreen> {
     setState(() {
       costs
         ..clear()
-        ..addAll(
-          (data as List).map((e) => Cost.fromJson(e)).toList(),
-        );
+        ..addAll((data as List).map((e) => Cost.fromJson(e)).toList());
     });
   }
 
@@ -56,15 +55,13 @@ class _CostsScreenState extends State<CostsScreen> {
     await showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Add Cost"),
+        title: const Text('Add Cost'),
         content: SingleChildScrollView(
           child: Column(
             children: [
               TextField(
                 controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: "Description",
-                ),
+                decoration: const InputDecoration(labelText: 'Description'),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -72,17 +69,15 @@ class _CostsScreenState extends State<CostsScreen> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
-                  prefixText: "£ ",
-                  labelText: "Amount",
+                  prefixText: '£ ',
+                  labelText: 'Amount',
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: notesController,
                 maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: "Notes",
-                ),
+                decoration: const InputDecoration(labelText: 'Notes'),
               ),
             ],
           ),
@@ -90,35 +85,39 @@ class _CostsScreenState extends State<CostsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
-              final amount =
-                  double.tryParse(amountController.text) ?? 0;
+              if (titleController.text.trim().isEmpty) return;
+
+              final amount = double.tryParse(amountController.text) ?? 0;
+
+              final newCost = Cost(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                propertyId: widget.property.id,
+                title: titleController.text.trim(),
+                amount: amount,
+                notes: notesController.text.trim(),
+                date: DateTime.now(),
+              );
 
               setState(() {
-                costs.add(
-                  Cost(
-                    id: DateTime.now()
-                        .millisecondsSinceEpoch
-                        .toString(),
-                    propertyId: widget.property.id,
-                    title: titleController.text,
-                    amount: amount,
-                    notes: notesController.text,
-                    date: DateTime.now(),
-                  ),
-                );
+                costs.add(newCost);
               });
 
               await saveCosts();
 
-              if (mounted) {
-                Navigator.pop(context);
-              }
+              await TimelineService.add(
+                propertyId: widget.property.id,
+                type: 'Cost',
+                title: newCost.title,
+                subtitle: 'Cost added: £${newCost.amount.toStringAsFixed(2)}',
+              );
+
+              if (mounted) Navigator.pop(context);
             },
-            child: const Text("Save"),
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -126,10 +125,7 @@ class _CostsScreenState extends State<CostsScreen> {
   }
 
   double get totalSpent {
-    return costs.fold(
-      0,
-      (sum, item) => sum + item.amount,
-    );
+    return costs.fold(0, (sum, item) => sum + item.amount);
   }
 
   @override
@@ -137,7 +133,7 @@ class _CostsScreenState extends State<CostsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F6),
       appBar: AppBar(
-        title: Text("💷 ${widget.property.name} Costs"),
+        title: Text('💷 ${widget.property.name} Costs'),
         backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
       ),
@@ -146,7 +142,7 @@ class _CostsScreenState extends State<CostsScreen> {
         backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text("Add Cost"),
+        label: const Text('Add Cost'),
       ),
       body: Column(
         children: [
@@ -159,11 +155,11 @@ class _CostsScreenState extends State<CostsScreen> {
                 color: Color(0xFF2E7D32),
               ),
               title: const Text(
-                "Total Spent",
+                'Total Spent',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
-                "£${totalSpent.toStringAsFixed(2)}",
+                '£${totalSpent.toStringAsFixed(2)}',
                 style: const TextStyle(fontSize: 24),
               ),
             ),
@@ -172,7 +168,7 @@ class _CostsScreenState extends State<CostsScreen> {
             child: costs.isEmpty
                 ? const Center(
                     child: Text(
-                      "No costs recorded yet.",
+                      'No costs recorded yet.',
                       style: TextStyle(fontSize: 18),
                     ),
                   )
@@ -194,7 +190,7 @@ class _CostsScreenState extends State<CostsScreen> {
                           title: Text(cost.title),
                           subtitle: Text(cost.notes),
                           trailing: Text(
-                            "£${cost.amount.toStringAsFixed(2)}",
+                            '£${cost.amount.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
