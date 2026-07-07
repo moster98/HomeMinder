@@ -30,11 +30,9 @@ class DashboardService {
     if (data == null) return 0;
 
     double total = 0;
-
     for (final item in data) {
       total += (item['amount'] as num).toDouble();
     }
-
     return total;
   }
 
@@ -42,9 +40,7 @@ class DashboardService {
     final data = await StorageService.loadJson('jobs_$propertyId');
     if (data == null) return 0;
 
-    return (data as List)
-        .where((item) => item['completed'] != true)
-        .length;
+    return (data as List).where((item) => item['completed'] != true).length;
   }
 
   static Future<int> propertyHealth(String propertyId) async {
@@ -54,13 +50,98 @@ class DashboardService {
     final documents = await documentCount(propertyId);
 
     int score = 100;
-
     if (reminders > 5) score -= 10;
     if (open > 3) score -= 10;
     if (photos == 0) score -= 5;
     if (documents == 0) score -= 5;
 
     return score.clamp(50, 100);
+  }
+
+  static Future<List<String>> propertyIds() async {
+    final properties = await StorageService.loadJson('properties');
+
+    if (properties == null) return ['1'];
+
+    final ids = (properties as List)
+        .map((item) => item['id'].toString())
+        .toList();
+
+    return ids.isEmpty ? ['1'] : ids;
+  }
+
+  static Future<int> propertyCount() async {
+    final ids = await propertyIds();
+    return ids.length;
+  }
+
+  static Future<int> totalOpenJobs() async {
+    final ids = await propertyIds();
+    int total = 0;
+
+    for (final id in ids) {
+      total += await openJobs(id);
+    }
+
+    return total;
+  }
+
+  static Future<double> totalPortfolioSpent() async {
+    final ids = await propertyIds();
+    double total = 0;
+
+    for (final id in ids) {
+      total += await totalSpent(id);
+    }
+
+    return total;
+  }
+
+  static Future<int> totalPhotos() async {
+    final ids = await propertyIds();
+    int total = 0;
+
+    for (final id in ids) {
+      total += await photoCount(id);
+    }
+
+    return total;
+  }
+
+  static Future<int> totalDocuments() async {
+    final ids = await propertyIds();
+    int total = 0;
+
+    for (final id in ids) {
+      total += await documentCount(id);
+    }
+
+    return total;
+  }
+
+  static Future<int> totalReminders() async {
+    final ids = await propertyIds();
+    int total = 0;
+
+    for (final id in ids) {
+      total += await reminderCount(id);
+    }
+
+    return total;
+  }
+
+  static Future<int> averageHealth() async {
+    final ids = await propertyIds();
+
+    if (ids.isEmpty) return 100;
+
+    int total = 0;
+
+    for (final id in ids) {
+      total += await propertyHealth(id);
+    }
+
+    return (total / ids.length).round();
   }
 
   static Future<int> totalStoredItems(String propertyId) async {

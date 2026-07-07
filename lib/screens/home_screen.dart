@@ -14,15 +14,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int propertyCount = 1;
+  int propertyCount = 0;
   int health = 100;
   int openJobs = 0;
   double totalSpent = 0;
   int reminders = 0;
   int photos = 0;
   int documents = 0;
-
-  final String mainPropertyId = '1';
 
   @override
   void initState() {
@@ -31,14 +29,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> loadDashboard() async {
-    final loadedHealth = await DashboardService.propertyHealth(mainPropertyId);
-    final loadedOpenJobs = await DashboardService.openJobs(mainPropertyId);
-    final loadedSpent = await DashboardService.totalSpent(mainPropertyId);
-    final loadedReminders = await DashboardService.reminderCount(mainPropertyId);
-    final loadedPhotos = await DashboardService.photoCount(mainPropertyId);
-    final loadedDocuments = await DashboardService.documentCount(mainPropertyId);
+    final loadedProperties = await DashboardService.propertyCount();
+    final loadedHealth = await DashboardService.averageHealth();
+    final loadedOpenJobs = await DashboardService.totalOpenJobs();
+    final loadedSpent = await DashboardService.totalPortfolioSpent();
+    final loadedReminders = await DashboardService.totalReminders();
+    final loadedPhotos = await DashboardService.totalPhotos();
+    final loadedDocuments = await DashboardService.totalDocuments();
 
     setState(() {
+      propertyCount = loadedProperties;
       health = loadedHealth;
       openJobs = loadedOpenJobs;
       totalSpent = loadedSpent;
@@ -73,14 +73,11 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 10),
             Text(
               '$greeting, James 👋',
-              style: const TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
             const Text(
-              'Here’s your live HomeMinder overview.',
+              'Here’s your live portfolio overview.',
               style: TextStyle(fontSize: 16, color: Colors.black54),
             ),
             const SizedBox(height: 24),
@@ -99,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: StatCard(
                     icon: Icons.health_and_safety,
                     title: '$health%',
-                    subtitle: 'Health',
+                    subtitle: 'Avg Health',
                   ),
                 ),
               ],
@@ -120,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: StatCard(
                     icon: Icons.payments,
                     title: '£${totalSpent.toStringAsFixed(0)}',
-                    subtitle: 'Spent',
+                    subtitle: 'Total Spent',
                   ),
                 ),
               ],
@@ -142,6 +139,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.photo_library,
                     title: photos.toString(),
                     subtitle: 'Photos',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            Row(
+              children: [
+                Expanded(
+                  child: StatCard(
+                    icon: Icons.description,
+                    title: documents.toString(),
+                    subtitle: 'Documents',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatCard(
+                    icon: Icons.dashboard_customize,
+                    title: 'Live',
+                    subtitle: 'Portfolio',
                   ),
                 ),
               ],
@@ -196,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        'You have $documents documents saved and $photos photos stored for your home.',
+                        'Across $propertyCount property, you have $documents documents, $photos photos and £${totalSpent.toStringAsFixed(0)} recorded.',
                         style: const TextStyle(fontSize: 16),
                       ),
                     ),
